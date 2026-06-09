@@ -36,5 +36,5 @@ RUN npm ci
 # TODO: Corrige el comando de arranque para ejecutar el punto de entrada compilado de NestJS.
 CMD ["node", "main.js"]
 
-# Puerto por defecto (Render inyecta PORT automáticamente)
-EXPOSE 3000
+# Puerto por defecto
+EXPOSE 8080
