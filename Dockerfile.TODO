@@ -18,6 +18,10 @@ COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
+RUN npm ci
+
+# Compilamos TypeScript a JavaScript (genera la carpeta /app/dist)
+# Equivale a ejecutar: nest build
 RUN npm run build
 
 # --- Etapa 2: Runner (producción) ---
@@ -26,15 +30,20 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # TODO: Configura el entorno de ejecución para producción.
+ENV NODE_ENV=production
 
-# TODO: Instala solo las dependencias necesarias para ejecutar la app (sin devDependencies).
-COPY package.json package-lock.json ./
-RUN npm ci
+# Copiamos package.json para poder instalar dependencias de producción
+COPY package*.json ./
 
-# TODO: Copia los archivos compilados desde la etapa de build a esta imagen.
+# Instalamos SOLO las dependencias de producción (sin Jest, linters, @types, etc.)
+# --omit=dev excluye todo lo que está en "devDependencies" del package.json
+RUN npm ci --omit=dev
 
-# TODO: Corrige el comando de arranque para ejecutar el punto de entrada compilado de NestJS.
-CMD ["node", "main.js"]
+# Copiamos la carpeta dist compilada desde la ETAPA 1 (builder)
+# Solo traemos el JavaScript ya compilado, no el TypeScript original
+COPY --from=builder /app/dist ./dist
 
-# Puerto por defecto
-EXPOSE 8080
+
+# Comando que se ejecuta cuando el contenedor arranca
+# Corre directamente el archivo compilado (no usa nest start, más eficiente)
+CMD ["node", "dist/main.js"]
